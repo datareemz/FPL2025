@@ -12,10 +12,11 @@ variable "region" {
 variable "repository_id" {
   type        = string
   description = "The name for your Artifact Registry Docker repository."
-  default     = "my-python-apps"
+  default     = "fpl-2025"
 }
 
 variable "github_repo" {
   type        = string
   description = "Your GitHub repository in 'owner/repo_name' format (e.g., 'my-org/my-cool-app')."
+  default     = "datareemz/2025"
 }
