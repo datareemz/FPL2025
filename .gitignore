@@ -53,10 +53,10 @@ wheels/
 
 
 
-/ml/.ipynb_checkpoints/
+/docker/ml/.ipynb_checkpoints/
 /ml/*.log
 /ml/*.ipynb
-/datastore
+/docker/datastore
 
 
 #ignore historical data

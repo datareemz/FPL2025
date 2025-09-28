@@ -3,8 +3,6 @@ import utils
 from constants import endpoints
 import json
 from utils import fetch, post_transfer, post
-from dataModel.user import User
-from dataModel.player import Player
 from dataModel.fixture import Fixture
 from auth.fpl_auth import FPLAuth
 from api.FPL_helpers import FPLHelpers

@@ -4,7 +4,7 @@ FROM python:3.11-slim
 ENV HOME_DIR=/app
 WORKDIR $HOME_DIR
 
-# Install system dependencies
+# Install system dependencies3
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
@@ -14,13 +14,8 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy specific application folders and files
-COPY dek/ ./dek/
-COPY auth/ ./auth/
-COPY api/ ./api/
-COPY dataModel/ ./dataModel/
-COPY ml/ ./ml/
-COPY historical/ ./historical/
+# Copy the entire docker folder contents
+COPY docker/ ./
 COPY constants.py ./
 COPY utils.py ./
 

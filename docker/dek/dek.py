@@ -1,4 +1,3 @@
-import sys
 import pandas as pd
 from api.FPL import FPL
 from api.FPL_helpers import FPLHelpers

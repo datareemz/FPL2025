@@ -5,7 +5,7 @@ import csv
 import pandas as pd
 import logging
 import utils
-from constants import endpoints, PLAYER_DATA_SCHEMA, POSITION_MAP
+from constants import endpoints, PLAYER_DATA_SCHEMA
 from dataModel.player import Player
 from dataModel.team import Team
 from dataModel.fixture import Fixture
