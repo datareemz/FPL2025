@@ -3,6 +3,8 @@ name: Deploy to Google Artifact Registry
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'docker/**'
   workflow_dispatch:
 
 env:

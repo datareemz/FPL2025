@@ -3,8 +3,12 @@ name: Format Check
 on:
   push:
     branches: [main]
+    paths:
+      - 'docker/**'
   pull_request:
     branches: [dev, main]
+    paths:
+      - 'docker/**'
 
 jobs:
   format-check:
