@@ -18,5 +18,5 @@ variable "repository_id" {
 variable "github_repo" {
   type        = string
   description = "Your GitHub repository in 'owner/repo_name' format (e.g., 'my-org/my-cool-app')."
-  default     = "datareemz/2025"
+  default     = "datareemz/FPL_2025"
 }
