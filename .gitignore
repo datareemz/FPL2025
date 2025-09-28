@@ -60,7 +60,7 @@ wheels/
 
 
 #ignore historical data
-/historical/_*
+/docker/historical/_*
 
 # terraform
 google_resources/terraform/.terraform/*
