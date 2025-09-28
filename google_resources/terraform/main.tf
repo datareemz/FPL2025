@@ -119,7 +119,7 @@ resource "google_cloud_run_v2_job" "python_job" {
         # --- ACTION REQUIRED ---
         # Replace this with the full URL of your image in Artifact Registry
         # Example: "us-central1-docker.pkg.dev/your-gcp-project-id/my-docker-repo/my-python-app:latest"
-        image = "gcr.io/cloudrun/hello" # Placeholder image
+        image = "us-central1-docker.pkg.dev/ardent-quarter-468720-i2/fpl-2025/fpl-app:latest" # Placeholder image
       }
     }
   }
