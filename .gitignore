@@ -63,5 +63,10 @@ wheels/
 #ignore historical data
 /historical/_*
 
+# terraform
+google_resources/terraform/.terraform/*
+google_resources/terraform/.terraform.lock.hcl
+
+
 
 

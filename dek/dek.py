@@ -106,7 +106,8 @@ predictions_to_player_obj = []
 
 
 async def main():
-    roi_model = load_model("../ml/Final et Model ROI-Target")
+    # roi_model = load_model("../ml/Final et Model ROI-Target")
+    roi_model = load_model("ml/Final et Model ROI-Target")
     print("ROI model loaded")
     session = aiohttp.ClientSession(trust_env=True)
     auth = FPLAuth(session)
@@ -114,6 +115,84 @@ async def main():
     fpl = FPL(session, auth, helpers)
     print("FPL model loaded")
 
+    gameweek = await fpl.helpers.get_upcoming_gameweek()
+    print(gameweek)
+    #
+    # await fpl.login()
+    #
+    # if fpl.logged_in():
+    #     entry = await fpl.get_current_user_entry()
+    #     print(entry)
+    #     info = await fpl.get_manager_info()
+    #     status = await fpl.get_transfers_status()
+    #     print(status)
+    #     print("Logged in")
+    #     await session.close()
+
+    # TODO retrain every 5 gameweeks
+    print("Game Week: {}".format(gameweek))
+    try:
+        await asyncio.wait_for(fpl.helpers.getData(gameweek), timeout=60.0)
+        unseen_data = pd.read_csv(f"datastore/current/FPL_data_{gameweek}.csv")
+
+        print("\nPredictions on unseen data:")
+        predictions = predict_model(roi_model, data=unseen_data).sort_values(
+            "prediction_label", ascending=False
+        )
+
+        predictions = predictions.head(200)
+
+        avg_ppg = predictions["points_per_game"].mean()
+        avg_roi = predictions["roi"].mean()
+        avg_proi = predictions["prediction_label"].mean()
+
+        predictions = predictions[
+            (predictions["points_per_game"] >= avg_ppg)
+            & (predictions["roi"] >= avg_roi)
+            & (predictions["prediction_label"] >= avg_proi)
+        ]
+
+        print(predictions.shape[0])
+        predicted_players = predictions.to_dict("records")
+
+        for i in predicted_players:
+            convert = await fpl.get_current_player(player=i, convert_hist=False)
+            predictions_to_player_obj.append(convert)
+
+        print("\nPredicted player: ", predicted_players[-2])
+        print("\nPredicted player converted: ", vars(predictions_to_player_obj[0]))
+
+        await fpl.login()
+
+        if fpl.logged_in():
+            user = await fpl.get_user()
+            my_players = await fpl.get_users_players(user)
+            print("my_players", my_players)
+            for i in my_players:
+                player = await fpl.get_current_player(player_id=i["element"])
+                MY_TEAM.append(player)
+            MY_TEAM.sort(key=lambda x: x.roi())
+            print("MY_TEAM", MY_TEAM[0])
+            res = fpl.helpers.get_team_analysis(MY_TEAM, metrics=metrics)[
+                "weakest_players"
+            ]
+
+            for i in res:
+                candidates = fpl.helpers.find_valid_replacement(
+                    player_out=i,
+                    player_pool=predictions_to_player_obj,
+                    current_team=MY_TEAM,
+                    metrics=metrics,
+                )
+                print(i)
+                print(len(predictions_to_player_obj))
+                print(len(candidates))
+                for i in candidates:
+                    print(i["player"])
+        await session.close()
+    except Exception as err:
+        "Cant get current data from FPL"
+        print(err)
     gameweek = await fpl.helpers.get_gameweek_stats(5)
     print(gameweek)
 
