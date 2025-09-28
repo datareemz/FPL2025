@@ -55,7 +55,6 @@ wheels/
 
 /ml/.ipynb_checkpoints/
 /ml/*.log
-/ml/*.pkl
 /ml/*.ipynb
 /datastore
 
