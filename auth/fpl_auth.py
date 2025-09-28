@@ -32,12 +32,11 @@ class FPLAuth:
             account.
         """
         if not email and not password:
-            email = os.getenv("FPL_EMAIL", "")
-            password = os.getenv("FPL_PASSWORD", "")
+            email = os.getenv("FPL_EMAIL", "okareem@stellaralgo.com")
+            password = os.getenv("FPL_PASSWORD", "@Testing123")
         if not email or not password:
             raise ValueError("Email and password must be set")
         print(f"Logging in: {LOGIN_URL}")
-        print(f"Logging in: {email}, {password}")
 
         code_verifier = utils.generate_code_verifier()
         code_challenge = utils.generate_code_challenge(code_verifier)
@@ -62,8 +61,6 @@ class FPLAuth:
                 new_state = re.search(
                     r'<input[^>]+name="state"[^>]+value="([^"]+)"', text2
                 ).group(1)
-
-                print("sc: ", access_token)
                 print("Successfully Retrieved Access Token... Continuing...")
             else:
                 if response.status != 200:
@@ -150,7 +147,7 @@ class FPLAuth:
         ) as response:
             assert response.status == 200
             response = await response.json()
-            print("third post complete", interaction_token)
+            print("third post completed, interactionToken received")
 
         async with self.session.post(
             AS_RESUME_URL,

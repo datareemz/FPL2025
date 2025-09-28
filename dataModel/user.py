@@ -32,7 +32,11 @@ class User:
         return True
 
     async def get_current_user_entry(self):
-        return getattr(self, "entry", None)
+        try:
+            entry = getattr(self, "entry", None)
+            return entry
+        except Exception as e:
+            raise NotImplementedError("cant find entry {}".format(e))
 
     async def get_user(self, user_id=None):
         """Returns the user with the given ``user_id``
@@ -88,7 +92,8 @@ class User:
             raise Exception("User must be logged in.")
         try:
             response = await utils.fetch(
-                self.session, API_MANAGER_INFO.format(f=getattr(self, "entry", None))
+                self.session,
+                API_MANAGER_INFO.format(f=await self.get_current_user_entry()),
             )
         except Exception as e:
             raise Exception("Client has not set a team for gameweek ")
@@ -104,7 +109,7 @@ class User:
         try:
             response = await utils.fetch(
                 self.session,
-                API_USER_TEAM.format(f=getattr(self, "entry", None)),
+                API_USER_TEAM.format(f=await self.get_current_user_entry()),
                 headers=utils.headers_access(self.access_token),
             )
         except Exception as e:
@@ -126,7 +131,7 @@ class User:
         try:
             response = await utils.fetch(
                 self.session,
-                API_USER_TEAM.format(f=getattr(self, "entry", None)),
+                API_USER_TEAM.format(f=await self.get_current_user_entry()),
                 headers=utils.headers_access(self.access_token),
             )
             transfers = response["transfers"]

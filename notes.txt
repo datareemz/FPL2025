@@ -121,7 +121,6 @@ TODO
 - Get the
 --SMOTE
 --
-
 ---Current Workflow
 - Run GetCurrentData to get a CSV of current Data for the season and current GW
 - Run notebook to create model with histo

@@ -3,11 +3,15 @@ import warnings
 import itertools
 import csv
 import pandas as pd
+import logging
 import utils
 from constants import endpoints, PLAYER_DATA_SCHEMA, POSITION_MAP
 from dataModel.player import Player
 from dataModel.team import Team
 from dataModel.fixture import Fixture
+
+# Get logger (configuration done in main entry point)
+logger = logging.getLogger(__name__)
 
 MAX_DEF = 5
 MAX_GK = 2
@@ -51,7 +55,7 @@ class FPLHelpers:
             data = await utils.fetch(self.session, STATIC_BASE_URL)
             players = data["elements"]
         except Exception as e:
-            print(e)
+            logger.error("Error fetching players data: %s", e)
             raise Exception
         if player_ids:
             players = [player for player in players if player["id"] in player_ids]
@@ -105,7 +109,7 @@ class FPLHelpers:
                     f"Player name {player.first_name} {player.second_name} not found, Might not be in the EPL"
                     f"anymore Dawg"
                 )
-                print(e)
+                logger.error("Error finding player: %s", e)
         return Player(player)
 
     async def get_team(self, *team_ids, team_names=None):
@@ -207,27 +211,25 @@ class FPLHelpers:
 
         try:
             unseen_data = pd.read_csv(f"../datastore/current/FPL_data_{gameweek}.csv")
-
         except Exception:
-
             fixtures = await self.get_all_fixtures(*range(1, gameweek))
             f, s = self.getFormDict(fixtures=fixtures)
-            print(f)
-            print(s)
+            logger.info("form_dict: %s", f)
+            logger.info("score_strength(not used): %s", s)
             g = self.get_FDR(form_dict=f, fixtures=fixtures)
-            print(g)
+            logger.info("FDR dictionary: %s", g)
             dict = await self.prepareData()
             for _ in dict:
                 if gameweek == 1:
                     _["starts"] = 0
                     _["minutes"] = 0
-                if _["team"] in g.keys():
-                    _["FDR_Average"] = round(g[_["team"]], 3)
+                if _["team_name"] in g.keys():
+                    _["FDR_Average"] = round(g[_["team_name"]], 3)
             keys = dict[0].keys()
             with open(
-                f"../datastore/current/FPL_data_{gameweek}.csv", "w", newline=""
+                f"datastore/current/FPL_data_{gameweek}.csv", "w", newline=""
             ) as output_file:
-                print(f"...Writing to CSV...")
+                logger.info("Writing to CSV...")
                 dict_writer = csv.DictWriter(output_file, keys)
                 dict_writer.writeheader()
                 dict_writer.writerows(dict)

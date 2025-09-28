@@ -26,6 +26,7 @@ FPL2025 is an advanced Fantasy Premier League (FPL) team optimization tool that 
   - Points per game and points per minute efficiency
   - Goal contributions per minute
   - Position-specific performance analysis
+  - In depth Fixture analysis with FDR Matrix
 
 ## 📁 Project Structure
 
@@ -57,31 +58,10 @@ FPL2025/
 └── notes.txt             # Development notes and workflow documentation
 ```
 
-## 🛠️ Installation & Setup
-
 ### Prerequisites
 - Python 3.11
 - Valid Fantasy Premier League account
 
-### Installation Steps
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/your-username/FPL2025.git
-   cd FPL2025
-   ```
-
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Set up FPL credentials** (see Authentication section below)
-
-4. **Run the main workflow**
-   ```bash
-   python dek/dek.py
-   ```
 
 ## 🔐 Authentication
 
@@ -121,11 +101,10 @@ The tool requires FPL login credentials to access your team data and make transf
 - **Starting XI Optimization**: Algorithm to select best 11 players for each gameweek
 - **Captain Selection**: Data-driven captain and vice-captain recommendations
 - **UI/Dashboard**: Web interface for easier interaction and visualization
-- - **Injury & Suspension Tracking**: Real-time player availability monitoring
+- **Injury & Suspension Tracking**: Real-time player availability monitoring
 
 ### Medium-term Features
-- **Enhanced Fixture Analysis**: More sophisticated fixture difficulty calculations future fixtures
-
+- **Enhanced Fixture Analysis**: More sophisticated fixture difficulty calculations for future fixtures
 
 ### Technical Improvements
 - **Model Retraining**: Automated model updates every 5 gameweeks
@@ -156,6 +135,44 @@ The tool respects all official FPL constraints:
 - Current models trained on historical Premier League data
 - Multi-metric evaluation for robust player assessment
 - Retrains model every 4 gameweeks to avoid potential drift and account for current season bias
+
+## Fixture Difficulty Rating (FDR)
+
+The FDR system is a custom metric that evaluates the difficulty of upcoming fixtures for each team based on their form and historical performance. Here's how it works:
+
+#### Calculation Process:
+1. **Team Form Analysis**: Each team's recent form is tracked using Win/Draw/Loss patterns (e.g., "WWDLW")
+2. **Form Conversion**: Form strings are converted to numerical values:
+   - Win (W) = 3 points
+   - Draw (D) = 1 point
+   - Loss (L) = 0 points
+   - Final form score = total points / (games played × 3) to normalize between 0-1
+3. **Fixture Difficulty Calculation**: For each upcoming fixture, the FDR compares:
+   - Team's own form score vs opponent's form score
+   - Home advantage is considered (team playing at home vs away team)
+4. **FDR Score**: Higher positive FDR = easier fixtures, negative FDR = harder fixtures
+
+#### Usage in Predictions:
+- Players from teams with easier upcoming fixtures (higher FDR) are more likely to score points
+- The FDR is factored into player selection and transfer recommendations
+- Helps identify "fixture swings" where previously difficult fixtures become easier
+
+### Score Strength Metric
+
+The Score Strength metric measures a team's ability to win games convincingly by tracking large margin victories and defeats.
+
+#### Calculation Process:
+1. **Goal Difference Analysis**: For each completed fixture, if the goal difference is ≥3:
+   - Winning team gets +1 score strength
+   - Losing team gets -1 score strength
+2. **Cumulative Tracking**: Score strength accumulates over the analyzed period
+3. **Interpretation**:
+   - Positive score strength = team frequently wins by large margins
+   - Negative score strength = team frequently loses by large margins
+   - Zero/low score strength = team typically involved in close games
+
+#### Current Status:
+**Note**: The score_strength metric is currently calculated and tracked but is **not used in the machine learning predictions**. It's available for future implementation and manual analysis but does not influence the current ROI predictions or transfer recommendations.
 
 ## 🤝 Contributing
 Contributions are welcome! Please feel free to submit pull requests, report bugs, or suggest new features.
