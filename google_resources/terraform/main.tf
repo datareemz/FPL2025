@@ -15,9 +15,9 @@ resource "google_project_service" "apis" {
     "artifactregistry.googleapis.com",
     "cloudbuild.googleapis.com" # Needed for Cloud Run to build images
   ])
-  project                    = var.project_id
-  service                    = each.key
-  disable_on_destroy         = false
+  project            = var.project_id
+  service            = each.key
+  disable_on_destroy = false
 }
 
 # IAM Service module to manage GitHub Actions authentication
@@ -29,11 +29,11 @@ module "iam_service" {
 
 # Artifact Registry module to manage Docker repository and GitHub Actions integration
 module "artifact_registry" {
-  source                              = "./artifact_registry"
-  project_id                          = var.project_id
-  region                              = var.region
-  repository_id                       = var.repository_id
-  api_services_dependency             = google_project_service.apis
+  source                               = "./artifact_registry"
+  project_id                           = var.project_id
+  region                               = var.region
+  repository_id                        = var.repository_id
+  api_services_dependency              = google_project_service.apis
   github_actions_service_account_email = module.iam_service.github_actions_service_account_email
 }
 
@@ -42,6 +42,7 @@ module "cloud_run" {
   source                  = "./cloud_run"
   project_id              = var.project_id
   region                  = var.region
+  # container_image =       "us-docker.pkg.dev/cloudrun/container/hello"
   container_image         = "${module.artifact_registry.repository_url}/fpl-app:latest"
   api_services_dependency = google_project_service.apis
 }
@@ -60,4 +61,3 @@ module "cloud_scheduler" {
   ]
   scheduler_service_account = ""
 }
-

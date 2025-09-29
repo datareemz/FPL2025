@@ -8,6 +8,11 @@ variable "region" {
   description = "The GCP region (e.g., 'us-central1')."
 }
 
+variable "deletion_protection" {
+  type    = bool
+  default = false
+}
+
 variable "job_name" {
   type        = string
   description = "The name of the Cloud Run job."

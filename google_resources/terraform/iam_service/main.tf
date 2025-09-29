@@ -3,8 +3,8 @@
 # Create a Workload Identity Pool for GitHub Actions
 resource "google_iam_workload_identity_pool" "github_pool" {
   project                   = var.project_id
-  workload_identity_pool_id = "github-actions-pool"
-  display_name              = "GitHub Actions Pool"
+  workload_identity_pool_id = "github-actions-pool-new"
+  display_name              = "GitHub Actions Pool New"
   description               = "Workload Identity Pool for GitHub Actions"
 }
 
@@ -21,7 +21,7 @@ resource "google_iam_workload_identity_pool_provider" "github_provider" {
     "attribute.actor"      = "assertion.actor"
     "attribute.repository" = "assertion.repository"
   }
-
+  attribute_condition = "attribute.repository == \"${var.github_repo}\""
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
   }

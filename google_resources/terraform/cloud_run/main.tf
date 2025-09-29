@@ -4,6 +4,7 @@ resource "google_cloud_run_v2_job" "python_job" {
   project  = var.project_id
   location = var.region
   name     = var.job_name
+  deletion_protection = false
   template {
     template {
       containers {
