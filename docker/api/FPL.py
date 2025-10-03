@@ -41,8 +41,8 @@ class FPL:
     async def get_user(self, user_id=None):
         return await self.auth.user.get_user(user_id)
 
-    async def get_manager_info_for_gw(self, user, gw):
-        return await self.auth.user.get_manager_info_for_gw(user, gw)
+    async def get_manager_info_for_gw(self, gw):
+        return await self.auth.user.get_manager_info_for_gw(gw)
 
     async def get_users_players(self, user):
         return await self.auth.user.get_users_players(user)
@@ -52,6 +52,9 @@ class FPL:
 
     async def get_transfers_status(self):
         return await self.auth.user.get_transfers_status()
+
+    async def get_gameweek_stats(self, gw):
+        return await self.helpers.get_gameweek_stats(gw)
 
     async def get_all_current_players(self, player_ids=None, return_json=False):
         return await self.helpers.get_all_current_players(player_ids, return_json)

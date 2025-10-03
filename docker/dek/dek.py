@@ -4,7 +4,15 @@ from api.FPL_helpers import FPLHelpers
 from auth.fpl_auth import FPLAuth
 import aiohttp
 import asyncio
-from pycaret.classification import load_model, predict_model
+from pycaret.regression import (
+    load_model,
+    predict_model,
+    setup,
+    tune_model,
+    finalize_model,
+    save_model,
+    create_model,
+)
 import logging
 
 # Configure logger
@@ -113,13 +121,57 @@ predictions_to_player_obj = []
 
 async def main():
     # roi_model = load_model("../ml/Final et Model ROI-Target")
-    roi_model = load_model("ml/Final et Model ROI-Target")
+    roi_model = load_model("ml/Final et Model ROI-Target - Retrained")
     logger.info("ROI model loaded")
     session = aiohttp.ClientSession(trust_env=True)
     auth = FPLAuth(session)
     helpers = FPLHelpers(session)
     fpl = FPL(session, auth, helpers)
+
+    # historical = pd.read_csv(f"datastore/training/FPL_data_24_25.csv")
+    # new_data = pd.read_csv(f"datastore/current/FPL_data_{prev_gameweek}.csv")
+    # print(historical.shape)
+    # print(new_data.shape)
+    #
+    # # s = setup(data=new_data, target='roi', session_id=123)
+    # # updated_model = create_model(roi_model)
+    #
+    # combined_data = pd.concat([historical, new_data], ignore_index=True)
+    #
+    #
+    # print(combined_data.shape)
+    # combined_data = combined_data[(combined_data["starts"] >  0 )]
+    # print('-------------------------')
+    # print(combined_data.shape)
+    # print(combined_data.head(10))
+    #
+    #
+    # data = combined_data.sample(frac=0.80, random_state=786)
+    # data_unseen = combined_data.drop(data.index)
+    #
+    # data.reset_index(drop=True, inplace=True)
+    # data_unseen.reset_index(drop=True, inplace=True)
+    #
+    # # Debug: Check sampled data
+    # print('Data for modeling shape:', data.shape)
+    # print('ROI in sampled data - unique values:', data['roi'].nunique())
+    #
+    #
+    # s = setup(data=data, target='roi', session_id=7177,ignore_features=['first_name', 'second_name', 'team_name', 'team', 'element_type'])
+    # et_retrain = create_model('et')
+    # tuned_et = tune_model(et_retrain)
+    # final_retrained_model = finalize_model(tuned_et)
+    #
+    # save_model(final_retrained_model, 'Final et Model ROI-Target - Retrained')
+    # print(str(final_retrained_model))
+
+    # status = await fpl.get_transfers_status()
+    # stats = await fpl.helpers.get_gameweek_stats(gw=prev_gameweek)
+    # print(status)
+    # print(info)
+    # print(stats)
     gameweek = await fpl.helpers.get_upcoming_gameweek()
+    prev_gameweek = gameweek - 1
 
     # TODO retrain every 5 gameweeks
     logger.info("upcoming Game Week: {}".format(gameweek))
@@ -151,6 +203,19 @@ async def main():
             predictions_to_player_obj.append(convert)
 
         await fpl.login()
+        logger.info("upcoming Game Week: {}".format(gameweek))
+        info = await fpl.get_manager_info_for_gw(gw=prev_gameweek)
+        logger.info(
+            "(previous) Game Week {} Manager info: {}".format(prev_gameweek, info)
+        )
+        gw_stats = await fpl.get_gameweek_stats(gw=prev_gameweek)
+        logger.info("(previous) Game Week {} Stats: {}".format(prev_gameweek, gw_stats))
+        logger.info(
+            "U_Highest {}".format(abs(info["points"] - gw_stats["highest_score"]))
+        )
+        logger.info(
+            "U_Average {}".format(abs(info["points"] - gw_stats["average_entry_score"]))
+        )
 
         if fpl.logged_in():
             user = await fpl.get_user()
@@ -162,6 +227,7 @@ async def main():
             res = fpl.helpers.get_team_analysis(MY_TEAM, metrics=metrics)[
                 "weakest_players"
             ]
+
             for i in res:
                 candidates = fpl.helpers.find_valid_replacement(
                     player_out=i,

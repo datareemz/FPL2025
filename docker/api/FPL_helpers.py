@@ -272,11 +272,12 @@ class FPLHelpers:
         """Returns the stats for gameweek.
         :rtype: dictionary
         """
+        stats = ["id", "average_entry_score", "highest_score"]
         try:
             response = await utils.fetch(self.session, STATIC_BASE_URL)
             gw_stats = [x for x in response["events"] if x["can_manage"] is False]
             gw_stats = next(x for x in gw_stats if x["id"] == gw)
-            # This is the for all gws finished
+            gw_stats = {key: value for key, value in gw_stats.items() if key in stats}
         except Exception:
             Warning("Start of the season, gameweek 1")
             return 1
@@ -491,6 +492,7 @@ class FPLHelpers:
             "by_position": {1: [], 2: [], 3: [], 4: []},
             "total_metric": 0,
             "weakest_players": [],
+            "no_position": [],
             "metrics_used": metrics,
         }
 
@@ -505,6 +507,7 @@ class FPLHelpers:
         #     else:
         #         return getattr(player, single_metric, 0)
 
+        all_players = []
         for player in team:
             total_value = 0
             # Calculate value for each metric and sum them
@@ -527,14 +530,16 @@ class FPLHelpers:
                         total_value *= val  # multipliers
                         metric_values[metric] = val
 
-            analysis["by_position"][player.element_type].append(
-                {
-                    "player_object": player,
-                    "player_name": str(player),
-                    "total_metric_value": total_value,
-                    "individual_metrics": str(metric_values),
-                }
-            )
+            player_info = {
+                "player_object": player,
+                "player_name": str(player),
+                "total_metric_value": total_value,
+                "individual_metrics": str(metric_values),
+            }
+
+            analysis["by_position"][player.element_type].append(player_info)
+            all_players.append(player_info)
+
         # Sort by metric within each position and identify weakest
         for position in analysis["by_position"]:
             analysis["by_position"][position].sort(
@@ -545,6 +550,11 @@ class FPLHelpers:
 
         # Sort the weakest players globally
         analysis["weakest_players"].sort(key=lambda x: x["total_metric_value"])
+
+        # Sort all players by total_metric_value to get weakest overall
+        all_players.sort(key=lambda x: x["total_metric_value"])
+        analysis["no_position"] = all_players
+
         return analysis
 
     def find_valid_replacement(self, player_out, player_pool, current_team, metrics):
