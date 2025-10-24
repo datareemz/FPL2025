@@ -9,6 +9,9 @@ from http import cookies
 import secrets
 import hashlib
 import base64
+from google.cloud import secretmanager
+import json
+import os
 
 
 headers = {
@@ -130,3 +133,26 @@ def generate_code_verifier():
 def generate_code_challenge(verifier):
     digest = hashlib.sha256(verifier.encode()).digest()
     return base64.urlsafe_b64encode(digest).decode().rstrip("=")
+
+
+def get_credentials_from_secret_manager(self):
+    """Fetch credentials from Google Secret Manager.
+
+    Returns:
+        tuple: (email, password) retrieved from Secret Manager
+    """
+    try:
+        project_id = os.getenv("GCP_PROJECT_ID", "ardent-quarter-468720-i2")
+        secret_id = os.getenv("SECRET_ID", "fpl_2025_credentials")
+
+        client = secretmanager.SecretManagerServiceClient()
+        secret_name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
+
+        response = client.access_secret_version(request={"name": secret_name})
+        secret_data = response.payload.data.decode("UTF-8")
+
+        credentials = json.loads(secret_data)
+        return credentials.get("email"), credentials.get("password")
+    except Exception as e:
+        print(f"Error fetching credentials from Secret Manager: {e}")
+        return None, None

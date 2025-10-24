@@ -50,6 +50,7 @@ wheels/
 .installed.cfg
 *.egg
 *.log
+key.json
 
 
 
@@ -69,6 +70,11 @@ google_resources/terraform/terraform.tfstate
 google_resources/terraform/terraform.tfstate.*
 google_resources/terraform/terraform.tfstate.backup
 google_resources/terraform/terraform.tfvars
+
+
+google_resources/terraform/secret_manager/.terraform*
+google_resources/terraform/secret_manager/terraform.*
+
 
 
 
