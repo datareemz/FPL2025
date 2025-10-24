@@ -135,7 +135,7 @@ def generate_code_challenge(verifier):
     return base64.urlsafe_b64encode(digest).decode().rstrip("=")
 
 
-def get_credentials_from_secret_manager(self):
+def get_credentials_from_secret_manager():
     """Fetch credentials from Google Secret Manager.
 
     Returns:
