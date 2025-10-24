@@ -27,7 +27,7 @@ class User:
             in self.session.cookie_jar.filter_cookies(
                 "https://account.premierleague.com/"
             )
-            for x in ["interactionToken", "interactionId"]
+            for x in ["interactionId"]
         ), "Must Be logged in"
         return True
 

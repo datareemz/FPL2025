@@ -41,3 +41,28 @@ resource "google_service_account_iam_member" "github_workload_user" {
   role               = "roles/iam.workloadIdentityUser"
   member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/${var.github_repo}"
 }
+
+# Create a Service Account for Cloud Run Job
+resource "google_service_account" "cloud_run_job_sa" {
+  project      = var.project_id
+  account_id   = "cloud-run-fpl-job-sa"
+  display_name = "Service Account for Cloud Run FPL Job"
+  description  = "Service account used by Cloud Run job to access GCS and Secret Manager"
+}
+
+# Grant Cloud Run Service Account access to Cloud Storage bucket
+resource "google_storage_bucket_iam_member" "cloud_run_bucket_access" {
+  count  = var.bucket_name != "" ? 1 : 0
+  bucket = var.bucket_name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.cloud_run_job_sa.email}"
+}
+
+# Grant Cloud Run Service Account access to Secret Manager secret
+resource "google_secret_manager_secret_iam_member" "cloud_run_secret_access" {
+  count     = var.secret_name != "" ? 1 : 0
+  project   = var.project_id
+  secret_id = var.secret_name
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.cloud_run_job_sa.email}"
+}

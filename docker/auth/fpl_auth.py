@@ -1,9 +1,11 @@
 import os
 import uuid
 import re
+import json
 import utils
 from constants import endpoints
 from dataModel.user import User
+from google.cloud import secretmanager
 
 LOGIN_URL = endpoints["API"]["LOGIN"]
 AUTH_URL = endpoints["API"]["AUTH"]
@@ -23,6 +25,28 @@ class FPLAuth:
         self.session = session
         self.user = None
 
+    def _get_credentials_from_secret_manager(self):
+        """Fetch credentials from Google Secret Manager.
+
+        Returns:
+            tuple: (email, password) retrieved from Secret Manager
+        """
+        try:
+            project_id = os.getenv("GCP_PROJECT_ID", "ardent-quarter-468720-i2")
+            secret_id = os.getenv("SECRET_ID", "fpl_2025_credentials")
+
+            client = secretmanager.SecretManagerServiceClient()
+            secret_name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
+
+            response = client.access_secret_version(request={"name": secret_name})
+            secret_data = response.payload.data.decode("UTF-8")
+
+            credentials = json.loads(secret_data)
+            return credentials.get("email"), credentials.get("password")
+        except Exception as e:
+            print(f"Error fetching credentials from Secret Manager: {e}")
+            return None, None
+
     async def login(self, email=None, password=None):
         """Returns a requests session with FPL login authentication.
 
@@ -32,10 +56,14 @@ class FPLAuth:
             account.
         """
         if not email and not password:
-            email = os.getenv("FPL_EMAIL", "okareem@stellaralgo.com")
-            password = os.getenv("FPL_PASSWORD", "@Testing123")
+            email, password = self._get_credentials_from_secret_manager()
+            if not email or not password:
+                email = os.getenv("FPL_EMAIL")
+                password = os.getenv("FPL_PASSWORD")
         if not email or not password:
-            raise ValueError("Email and password must be set")
+            raise ValueError(
+                "Email and password must be set. Configure them in Google Secret Manager or environment variables."
+            )
         print(f"Logging in: {LOGIN_URL}")
 
         code_verifier = utils.generate_code_verifier()
@@ -76,13 +104,13 @@ class FPLAuth:
             assert response.status == 200
             response = await response.json()
             interaction_id = response["interactionId"]
-            interaction_token = response["interactionToken"]
+            # interactionToken = response["interactionToken"]
 
         async with self.session.post(
             DAVINCI_CONNECTIONS_URL.format(STANDARD_CONNECTION_ID),
             headers={
                 "interactionId": interaction_id,
-                "interactionToken": interaction_token,
+                # "interactionToken": interaction_token,
             },
             json={
                 "id": response["id"],
@@ -103,7 +131,7 @@ class FPLAuth:
             DAVINCI_CONNECTIONS_URL.format(STANDARD_CONNECTION_ID),
             headers={
                 "interactionId": interaction_id,
-                "interactionToken": interaction_token,
+                # "interactionToken": interaction_token,
             },
             json={
                 "id": response["id"],

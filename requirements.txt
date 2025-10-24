@@ -7,4 +7,4 @@ requests
 prettytable
 black
 pycaret
-black
+google-cloud-secret-manager

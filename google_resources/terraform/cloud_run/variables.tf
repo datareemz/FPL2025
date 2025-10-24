@@ -29,3 +29,9 @@ variable "api_services_dependency" {
   type        = any
   default     = null
 }
+
+variable "service_account_email" {
+  type        = string
+  description = "The service account email to use for the Cloud Run job."
+  default     = ""
+}

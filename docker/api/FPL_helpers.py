@@ -5,6 +5,7 @@ import csv
 import pandas as pd
 import logging
 import utils
+import os
 from constants import endpoints, PLAYER_DATA_SCHEMA
 from dataModel.player import Player
 from dataModel.team import Team
@@ -208,10 +209,8 @@ class FPLHelpers:
                 player[captain_type] = True
 
     async def getData(self, gameweek):
-
-        try:
-            unseen_data = pd.read_csv(f"../datastore/current/FPL_data_{gameweek}.csv")
-        except Exception:
+        file_name = f"datastore/current/FPL_data_{gameweek}.csv"
+        if not os.path.exists(file_name):
             fixtures = await self.get_all_fixtures(*range(1, gameweek))
             f, s = self.getFormDict(fixtures=fixtures)
             logger.info("form_dict: %s", f)
@@ -226,9 +225,7 @@ class FPLHelpers:
                 if _["team_name"] in g.keys():
                     _["FDR_Average"] = round(g[_["team_name"]], 3)
             keys = dict[0].keys()
-            with open(
-                f"datastore/current/FPL_data_{gameweek}.csv", "w", newline=""
-            ) as output_file:
+            with open(file_name, "w", newline="") as output_file:
                 logger.info("Writing to CSV...")
                 dict_writer = csv.DictWriter(output_file, keys)
                 dict_writer.writeheader()

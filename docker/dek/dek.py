@@ -127,6 +127,7 @@ async def main():
     auth = FPLAuth(session)
     helpers = FPLHelpers(session)
     fpl = FPL(session, auth, helpers)
+    await fpl.login()
 
     # historical = pd.read_csv(f"datastore/training/FPL_data_24_25.csv")
     # new_data = pd.read_csv(f"datastore/current/FPL_data_{prev_gameweek}.csv")
@@ -179,6 +180,7 @@ async def main():
         await asyncio.wait_for(fpl.helpers.getData(gameweek), timeout=60.0)
         # unseen_data = pd.read_csv(f"../datastore/current/FPL_data_{gameweek}.csv")
         unseen_data = pd.read_csv(f"datastore/current/FPL_data_{gameweek}.csv")
+        print(unseen_data.head(10))
         predictions = predict_model(roi_model, data=unseen_data).sort_values(
             "prediction_label", ascending=False
         )
@@ -202,7 +204,6 @@ async def main():
             convert = await fpl.get_current_player(player=i, convert_hist=False)
             predictions_to_player_obj.append(convert)
 
-        await fpl.login()
         logger.info("upcoming Game Week: {}".format(gameweek))
         info = await fpl.get_manager_info_for_gw(gw=prev_gameweek)
         logger.info(
@@ -224,11 +225,11 @@ async def main():
                 player = await fpl.get_current_player(player_id=i["element"])
                 MY_TEAM.append(player)
             MY_TEAM.sort(key=lambda x: x.roi())
-            res = fpl.helpers.get_team_analysis(MY_TEAM, metrics=metrics)[
-                "weakest_players"
-            ]
+            res = fpl.helpers.get_team_analysis(MY_TEAM, metrics=metrics)
+            res = res["no_position"]
+            print(res)
 
-            for i in res:
+            for i in res[0:3]:
                 candidates = fpl.helpers.find_valid_replacement(
                     player_out=i,
                     player_pool=predictions_to_player_obj,
