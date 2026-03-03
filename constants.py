@@ -63,3 +63,43 @@ FPL_BUCKET = "fpl_2025"
 
 # Position mapping
 POSITION_MAP = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
+
+
+POSITION_WEIGHTS = {
+    1: {
+        "total_points": 0.30,
+        "points_per_game": 0.25,
+        "roi": 0.20,
+        "starts": 0.15,
+        "minutes": 0.10,
+        "goals_scored": 0.00,
+        "assists": 0.00,
+    },
+    2: {
+        "total_points": 0.25,
+        "points_per_game": 0.20,
+        "roi": 0.15,
+        "goals_scored": 0.15,
+        "assists": 0.10,
+        "starts": 0.10,
+        "minutes": 0.05,
+    },
+    3: {
+        "total_points": 0.20,
+        "points_per_game": 0.20,
+        "goals_scored": 0.25,
+        "assists": 0.15,
+        "roi": 0.10,
+        "starts": 0.05,
+        "minutes": 0.05,
+    },
+    4: {
+        "total_points": 0.20,
+        "points_per_game": 0.20,
+        "goals_scored": 0.30,
+        "assists": 0.15,
+        "roi": 0.05,
+        "starts": 0.05,
+        "minutes": 0.05,
+    },
+}

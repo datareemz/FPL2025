@@ -168,80 +168,83 @@ async def main():
     # print(status)
     # print(info)
     # print(stats)
-    # gameweek = await fpl.helpers.get_upcoming_gameweek()
-    game_week = 26
+    game_week = await fpl.helpers.get_upcoming_gameweek()
+    prev_game_week = game_week - 1
+    # game_week = 26
     await orchestrator.track_performance(fpl, game_week)
 
     # TODO retrain every 5 gameweeks
-    # logger.info("upcoming Game Week: {}".format(gameweek))
-    # try:
-    #     await asyncio.wait_for(fpl.helpers.get_data(gameweek), timeout=60.0)
-    #     unseen_data = pd.read_csv(f"datastore/current/FPL_data_{gameweek}.csv")
-    #     print(unseen_data.head(10))
-    #     predictions = predict_model(roi_model, data=unseen_data).sort_values(
-    #         "prediction_label", ascending=False
-    #     )
-    #
-    #     predictions = predictions.head(250)
-    #
-    #     avg_ppg = predictions["points_per_game"].mean()
-    #     avg_roi = predictions["roi"].mean()
-    #     avg_proi = predictions["prediction_label"].mean()
-    #
-    #     predictions = predictions[
-    #         (predictions["points_per_game"] >= avg_ppg)
-    #         & (predictions["roi"] >= avg_roi)
-    #         & (predictions["prediction_label"] >= avg_proi)
-    #     ]
-    #
-    #     logger.info("Predictions pool on unseen data: %d", predictions.shape[0])
-    #     predicted_players = predictions.to_dict("records")
-    #
-    #     for i in predicted_players:
-    #         convert = await fpl.get_current_player(player=i, convert_hist=False)
-    #         predictions_to_player_obj.append(convert)
-    #
-    #     logger.info("upcoming Game Week: {}".format(gameweek))
-    #     info = await fpl.get_manager_info_for_gw(gw=prev_gameweek)
-    #     logger.info(
-    #         "(previous) Game Week {} Manager info: {}".format(prev_gameweek, info)
-    #     )
-    #     gw_stats = await fpl.get_gameweek_stats(gw=prev_gameweek)
-    #     logger.info("(previous) Game Week {} Stats: {}".format(prev_gameweek, gw_stats))
-    #     logger.info(
-    #         "U_Highest {}".format(abs(info["points"] - gw_stats["highest_score"]))
-    #     )
-    #     logger.info(
-    #         "U_Average {}".format(abs(info["points"] - gw_stats["average_entry_score"]))
-    #     )
-    #
-    #     if fpl.logged_in():
-    #         user = await fpl.get_user()
-    #         my_players = await fpl.get_users_players(user)
-    #         for i in my_players:
-    #             player = await fpl.get_current_player(player_id=i["element"])
-    #             MY_TEAM.append(player)
-    #         MY_TEAM.sort(key=lambda x: x.roi())
-    #         res = fpl.helpers.get_team_analysis(MY_TEAM, metrics=metrics)
-    #         res = res["no_position"]
-    #         print(res)
-    #
-    #         for i in res[0:4]:
-    #             candidates = fpl.helpers.find_valid_replacement(
-    #                 player_out=i,
-    #                 player_pool=predictions_to_player_obj,
-    #                 current_team=MY_TEAM,
-    #                 metrics=metrics,
-    #             )
-    #             logger.info("Weak player: %s", i)
-    #             logger.info("Number of potential candidates: %d", len(candidates))
-    #             for i in candidates:
-    #                 logger.info("Candidate: %s", i["player"])
-    #     logger.info("Done work flow")
-    #     await session.close()
-    # except Exception as err:
-    #     "Cant get current data from FPL"
-    #     logger.error("Error in main workflow: %s", err)
+    logger.info("upcoming Game Week: {}".format(game_week))
+    try:
+        await asyncio.wait_for(fpl.helpers.get_data(game_week), timeout=60.0)
+        unseen_data = pd.read_csv(f"datastore/current/FPL_data_{game_week}.csv")
+        print(unseen_data.head(10))
+        predictions = predict_model(roi_model, data=unseen_data).sort_values(
+            "prediction_label", ascending=False
+        )
+
+        predictions = predictions.head(250)
+
+        avg_ppg = predictions["points_per_game"].mean()
+        avg_roi = predictions["roi"].mean()
+        avg_proi = predictions["prediction_label"].mean()
+
+        predictions = predictions[
+            (predictions["points_per_game"] >= avg_ppg)
+            & (predictions["roi"] >= avg_roi)
+            & (predictions["prediction_label"] >= avg_proi)
+        ]
+
+        logger.info("Predictions pool on unseen data: %d", predictions.shape[0])
+        predicted_players = predictions.to_dict("records")
+
+        for i in predicted_players:
+            convert = await fpl.get_current_player(player=i, convert_hist=False)
+            predictions_to_player_obj.append(convert)
+
+        logger.info("upcoming Game Week: {}".format(game_week))
+        info = await fpl.get_manager_info_for_gw(gw=prev_game_week)
+        logger.info(
+            "(previous) Game Week {} Manager info: {}".format(prev_game_week, info)
+        )
+        gw_stats = await fpl.get_game_week_stats(gw=prev_game_week)
+        logger.info("(previous) Game Week {} Stats: {}".format(prev_game_week, gw_stats))
+        logger.info(
+            "U_Highest {}".format(abs(info["points"] - gw_stats["highest_score"]))
+        )
+        logger.info(
+            "U_Average {}".format(abs(info["points"] - gw_stats["average_entry_score"]))
+        )
+
+        if fpl.logged_in():
+            user = await fpl.get_user()
+            my_players = await fpl.get_users_players(user)
+            for i in my_players:
+                player = await fpl.get_current_player(player_id=i["element"])
+                MY_TEAM.append(player)
+            MY_TEAM.sort(key=lambda x: x.roi())
+            analysis = fpl.helpers.get_team_analysis(MY_TEAM, metrics=metrics)
+            metric_stats = analysis["metric_stats"]
+            res = analysis["no_position"]
+            print(res)
+
+            for i in res[0:4]:
+                candidates = fpl.helpers.find_valid_replacement(
+                    player_out=i,
+                    player_pool=predictions_to_player_obj,
+                    current_team=MY_TEAM,
+                    metrics=metrics,
+                    metric_stats=metric_stats,
+                )
+                logger.info("Weak player: %s", i)
+                logger.info("Number of potential candidates: %d", len(candidates))
+                for i in candidates:
+                    logger.info("Candidate: %s", i["player"])
+        logger.info("Done work flow")
+        await session.close()
+    except Exception as err:
+        "Cant get current data from FPL"
+        logger.error("Error in main workflow: %s", err)
     await session.close()
 
 

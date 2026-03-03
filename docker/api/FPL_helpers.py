@@ -9,6 +9,7 @@ import os
 from constants import (
     endpoints,
     PLAYER_DATA_SCHEMA,
+    POSITION_WEIGHTS,
     MAX_DEF,
     MAX_GK,
     MAX_MID,
@@ -486,158 +487,179 @@ class FPLHelpers:
             "remaining_budget": MAX_BUDGET - total_cost,
         }
 
+    def _get_metric_value(self, player, metric):
+        """Extracts a metric value, handling both attributes and methods.
+
+        :param player: Player object
+        :param metric: Metric name string
+        :return: float metric value
+        """
+        if player is None:
+            return 0.0
+        if not isinstance(metric, str):
+            return 0.0
+        val = getattr(player, metric, 0)
+        if callable(val):
+            return float(val())
+        return float(val)
+
+    # O(n * m) - n players, m metrics
     def get_team_analysis(self, team, metrics):
-        """Analyzes team performance by position.
+        """Analyzes team using z-score normalization and position weights.
 
         :param team: List of Player objects
-        :param metrics: List of metrics to analyze (['total_points', 'roi', 'points_per_Min'], etc.)
-        :return: Dict with team analysis
+        :param metrics: List of metric names
+        :return: Dict with team analysis and metric_stats for reuse
         """
-        metric_values = {}
+        if not team:
+            return {"by_position": {}, "no_position": [], "metric_stats": {}}
+        if not metrics:
+            return {"by_position": {}, "no_position": [], "metric_stats": {}}
+
         analysis = {
             "by_position": {1: [], 2: [], 3: [], 4: []},
-            "total_metric": 0,
             "weakest_players": [],
             "no_position": [],
             "metrics_used": metrics,
+            "metric_stats": {},
         }
 
-        # def get_player_metric_value(player, single_metric):
-        #     """Helper function to get metric value for a player."""
-        #     if single_metric == "total_points":
-        #         return c
-        #     elif single_metric == "roi":
-        #         return player.roi()
-        #     elif single_metric == "points_per_Min":
-        #         return player.points_per_Min()
-        #     else:
-        #         return getattr(player, single_metric, 0)
-
-        all_players = []
+        # Collect raw metric values per player
+        raw_values = {m: [] for m in metrics}
+        player_raw = []
         for player in team:
-            total_value = 0
-            # Calculate value for each metric and sum them
+            raw = {}
             for metric in metrics:
-                match metric:
-                    case (
-                        "total_points"
-                        | "goals_scored"
-                        | "assists"
-                        | "starts"
-                        | "points_per_game"
-                    ):
-                        val = float(getattr(player, metric))
-                        if metric == "points_per_game":
-                            total_value *= val
-                        total_value += val
-                        metric_values[metric] = val
+                val = self._get_metric_value(player, metric)
+                raw[metric] = val
+                raw_values[metric].append(val)
+            player_raw.append((player, raw))
 
-                    case "roi":
-                        val = float(getattr(player, metric)())
-                        total_value *= val  # multipliers
-                        metric_values[metric] = val
+        # Compute team-wide mean and std per metric
+        metric_stats = {}
+        for metric in metrics:
+            values = raw_values[metric]
+            mean = sum(values) / len(values)
+            variance = sum((v - mean) ** 2 for v in values) / len(values)
+            std = variance ** 0.5
+            metric_stats[metric] = {"mean": mean, "std": std}
+        analysis["metric_stats"] = metric_stats
+
+        # Z-score normalize and apply position-specific weights
+        all_players = []
+        for player, raw in player_raw:
+            position = getattr(player, "element_type", 3)
+            weights = POSITION_WEIGHTS.get(position, POSITION_WEIGHTS[3])
+
+            total_value = 0.0
+            z_scores = {}
+            for metric in metrics:
+                stats = metric_stats[metric]
+                z = 0.0
+                if stats["std"] > 0:
+                    z = (raw[metric] - stats["mean"]) / stats["std"]
+                z_scores[metric] = z
+                total_value += z * weights.get(metric, 0.0)
 
             player_info = {
                 "player_object": player,
                 "player_name": str(player),
                 "total_metric_value": total_value,
-                "individual_metrics": str(metric_values),
+                "individual_metrics": z_scores,
+                "raw_metrics": raw,
             }
-
-            analysis["by_position"][player.element_type].append(player_info)
+            analysis["by_position"][position].append(player_info)
             all_players.append(player_info)
 
-        # Sort by metric within each position and identify weakest
+        # Sort by metric within each position, weakest first
         for position in analysis["by_position"]:
             analysis["by_position"][position].sort(
                 key=lambda x: x["total_metric_value"]
             )
             if analysis["by_position"][position]:
-                analysis["weakest_players"].append(analysis["by_position"][position][0])
+                analysis["weakest_players"].append(
+                    analysis["by_position"][position][0]
+                )
 
-        # Sort the weakest players globally
         analysis["weakest_players"].sort(key=lambda x: x["total_metric_value"])
-
-        # Sort all players by total_metric_value to get weakest overall
         all_players.sort(key=lambda x: x["total_metric_value"])
         analysis["no_position"] = all_players
 
         return analysis
 
-    def find_valid_replacement(self, player_out, player_pool, current_team, metrics):
-        """Finds valid replacement for a player from the pool.
 
-        :param player_out: Player to replace
-        :param player_pool: Available players
-        :param current_team: Current team (without player_out)
-        :param metric: Optimization metric
-        :return: Best replacement player or None
+    def find_valid_replacement(
+        self, player_out, player_pool, current_team, metrics, metric_stats
+    ):
+        """Finds valid replacement using absolute z-score comparison.
+
+        :param player_out: Dict from get_team_analysis with player_object and total_metric_value
+        :param player_pool: Available Player objects
+        :param current_team: Current team list
+        :param metrics: List of metric names
+        :param metric_stats: Dict of {metric: {mean, std}} from get_team_analysis
+        :return: Sorted list of candidate dicts or None
         """
-        # Exrtact player object
-        player_out = player_out["player_object"]
-        # Filter pool to same position
-        candidates = [p for p in player_pool if p._position() == player_out._position()]
+        if not player_pool or not metric_stats:
+            return None
+        if not player_out:
+            return None
 
-        # Remove players already in team
-        _ids_in_team = {p.id for p in current_team if hasattr(p, "id")} | {
+        player_out_obj = player_out["player_object"]
+        player_out_score = player_out["total_metric_value"]
+        position = getattr(player_out_obj, "element_type", 3)
+        weights = POSITION_WEIGHTS.get(position, POSITION_WEIGHTS[3])
+
+        # Filter pool to same position, exclude current team
+        candidates = [
+            p for p in player_pool
+            if p._position() == player_out_obj._position()
+        ]
+        _ids_in_team = {
             getattr(p, "id", None) for p in current_team
         }
         candidates = [
-            p for p in candidates if getattr(p, "id", None) not in _ids_in_team
+            p for p in candidates
+            if getattr(p, "id", None) not in _ids_in_team
         ]
 
         valid_candidates = []
-
         for candidate in candidates:
-            total_metric_improvement_val = 0
-            # Check if replacement maintains team constraints
-            temp_team = [p for p in current_team if p != player_out] + [candidate]
-
-            # Check budget constraint (assuming selling price = current cost for simplicity)
-            cost_diff = candidate.now_cost - player_out.now_cost
+            temp_team = [
+                p for p in current_team if p != player_out_obj
+            ] + [candidate]
             team_validation = self.validate_team_constraints(temp_team)
+
+            if not team_validation["valid"]:
+                continue
+
+            # Score candidate on the same z-score scale
+            candidate_score = 0.0
             individual_metrics = {}
+            for metric in metrics:
+                val = self._get_metric_value(candidate, metric)
+                stats = metric_stats[metric]
+                z = 0.0
+                if stats["std"] > 0:
+                    z = (val - stats["mean"]) / stats["std"]
+                individual_metrics[metric] = z
+                candidate_score += z * weights.get(metric, 0.0)
 
-            if team_validation["valid"]:
-                for metric in metrics:
-                    metric_improvement_val = 0
-                    match metric:
-                        case (
-                            "total_points"
-                            | "goals_scored"
-                            | "assists"
-                            | "starts"
-                            | "points_per_game"
-                        ):
-                            metric_improvement_val = getattr(candidate, metric) - float(
-                                getattr(player_out, metric)
-                            )
-                            if metric == "points_per_game":
-                                total_metric_improvement_val *= metric_improvement_val
-                            total_metric_improvement_val += metric_improvement_val
-                            individual_metrics[metric] = metric_improvement_val
+            cost_diff = candidate.now_cost - player_out_obj.now_cost
+            improvement = candidate_score - player_out_score
 
-                        case "roi":
-                            metric_improvement_val = (
-                                getattr(candidate, metric)
-                                - getattr(player_out, metric)()
-                            )
-                            total_metric_improvement_val *= metric_improvement_val
-                            individual_metrics[metric] = metric_improvement_val
+            valid_candidates.append({
+                "player": candidate,
+                "cost_diff": cost_diff,
+                "individual_metrics": individual_metrics,
+                "candidate_score": candidate_score,
+                "total_metric_improvement_val": improvement,
+            })
 
-                valid_candidates.append(
-                    {
-                        "player": candidate,
-                        "cost_diff": cost_diff,
-                        "individual_metrics": individual_metrics,
-                        "total_metric_improvement_val": total_metric_improvement_val,
-                    }
-                )
-
-        # Return best candidate (highest improvement)
         if valid_candidates:
             valid_candidates.sort(
-                key=lambda x: x["total_metric_improvement_val"], reverse=True
+                key=lambda x: x["total_metric_improvement_val"],
+                reverse=True,
             )
             return valid_candidates
 
