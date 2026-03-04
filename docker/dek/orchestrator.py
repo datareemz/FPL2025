@@ -106,6 +106,7 @@ def find_transfer_recommendations(fpl, team, player_pool):
     """Analyze the team and find replacement candidates for weakest players."""
     analysis = fpl.helpers.get_team_analysis(team, metrics=METRICS)
     weakest = analysis["no_position"]
+    metric_stats = analysis["metric_stats"]
 
     recommendations = []
     for weak_player in weakest[:4]:
@@ -114,6 +115,7 @@ def find_transfer_recommendations(fpl, team, player_pool):
             player_pool=player_pool,
             current_team=team,
             metrics=METRICS,
+            metric_stats=metric_stats,
         )
         if candidates:
             recommendations.append(
