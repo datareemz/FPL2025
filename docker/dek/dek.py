@@ -208,7 +208,9 @@ async def main():
             "(previous) Game Week {} Manager info: {}".format(prev_game_week, info)
         )
         gw_stats = await fpl.get_game_week_stats(gw=prev_game_week)
-        logger.info("(previous) Game Week {} Stats: {}".format(prev_game_week, gw_stats))
+        logger.info(
+            "(previous) Game Week {} Stats: {}".format(prev_game_week, gw_stats)
+        )
         logger.info(
             "U_Highest {}".format(abs(info["points"] - gw_stats["highest_score"]))
         )

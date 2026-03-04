@@ -2,7 +2,6 @@ from constants import endpoints
 import utils
 import aiohttp
 
-
 API_USER_TEAM = endpoints["API"]["USER_TEAM"]
 API_ME = endpoints["API"]["ME"]
 API_MANAGER_INFO_PER_GW_URL = endpoints["API"]["MANAGER_INFO_PER_GW"]

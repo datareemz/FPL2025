@@ -541,7 +541,7 @@ class FPLHelpers:
             values = raw_values[metric]
             mean = sum(values) / len(values)
             variance = sum((v - mean) ** 2 for v in values) / len(values)
-            std = variance ** 0.5
+            std = variance**0.5
             metric_stats[metric] = {"mean": mean, "std": std}
         analysis["metric_stats"] = metric_stats
 
@@ -577,16 +577,13 @@ class FPLHelpers:
                 key=lambda x: x["total_metric_value"]
             )
             if analysis["by_position"][position]:
-                analysis["weakest_players"].append(
-                    analysis["by_position"][position][0]
-                )
+                analysis["weakest_players"].append(analysis["by_position"][position][0])
 
         analysis["weakest_players"].sort(key=lambda x: x["total_metric_value"])
         all_players.sort(key=lambda x: x["total_metric_value"])
         analysis["no_position"] = all_players
 
         return analysis
-
 
     def find_valid_replacement(
         self, player_out, player_pool, current_team, metrics, metric_stats
@@ -612,22 +609,16 @@ class FPLHelpers:
 
         # Filter pool to same position, exclude current team
         candidates = [
-            p for p in player_pool
-            if p._position() == player_out_obj._position()
+            p for p in player_pool if p._position() == player_out_obj._position()
         ]
-        _ids_in_team = {
-            getattr(p, "id", None) for p in current_team
-        }
+        _ids_in_team = {getattr(p, "id", None) for p in current_team}
         candidates = [
-            p for p in candidates
-            if getattr(p, "id", None) not in _ids_in_team
+            p for p in candidates if getattr(p, "id", None) not in _ids_in_team
         ]
 
         valid_candidates = []
         for candidate in candidates:
-            temp_team = [
-                p for p in current_team if p != player_out_obj
-            ] + [candidate]
+            temp_team = [p for p in current_team if p != player_out_obj] + [candidate]
             team_validation = self.validate_team_constraints(temp_team)
 
             if not team_validation["valid"]:
@@ -648,13 +639,15 @@ class FPLHelpers:
             cost_diff = candidate.now_cost - player_out_obj.now_cost
             improvement = candidate_score - player_out_score
 
-            valid_candidates.append({
-                "player": candidate,
-                "cost_diff": cost_diff,
-                "individual_metrics": individual_metrics,
-                "candidate_score": candidate_score,
-                "total_metric_improvement_val": improvement,
-            })
+            valid_candidates.append(
+                {
+                    "player": candidate,
+                    "cost_diff": cost_diff,
+                    "individual_metrics": individual_metrics,
+                    "candidate_score": candidate_score,
+                    "total_metric_improvement_val": improvement,
+                }
+            )
 
         if valid_candidates:
             valid_candidates.sort(
