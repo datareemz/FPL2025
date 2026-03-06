@@ -67,23 +67,43 @@ def generate_chart(rows: list[dict], dest: Path) -> None:
     fig, ax = plt.subplots(figsize=(14, 4))
 
     ax.plot(
-        gws, my_pts, color="#2ecc71", marker="o",
-        linewidth=2, markersize=6, label="My Points", zorder=3,
+        gws,
+        my_pts,
+        color="#2ecc71",
+        marker="o",
+        linewidth=2,
+        markersize=6,
+        label="My Points",
+        zorder=3,
     )
     ax.plot(
-        gws, avg_pts, color="#e67e22", marker="s",
-        linewidth=2, markersize=6, label="Average Points", zorder=3,
+        gws,
+        avg_pts,
+        color="#e67e22",
+        marker="s",
+        linewidth=2,
+        markersize=6,
+        label="Average Points",
+        zorder=3,
     )
 
     ax.fill_between(
-        gws, my_arr, avg_arr,
+        gws,
+        my_arr,
+        avg_arr,
         where=(my_arr >= avg_arr),
-        interpolate=True, alpha=0.2, color="#2ecc71",
+        interpolate=True,
+        alpha=0.2,
+        color="#2ecc71",
     )
     ax.fill_between(
-        gws, my_arr, avg_arr,
+        gws,
+        my_arr,
+        avg_arr,
         where=(my_arr < avg_arr),
-        interpolate=True, alpha=0.2, color="#e74c3c",
+        interpolate=True,
+        alpha=0.2,
+        color="#e74c3c",
     )
 
     ax.set_xlabel("Gameweek")
