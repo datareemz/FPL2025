@@ -189,28 +189,32 @@ async def execute_or_log_transfers(fpl, recommendations):
     return transfer_log
 
 
-async def track_performance(fpl, game_week):
-    """Fetch and persist performance for all game weeks up to game_week.
+async def update_performance(fpl):
+    """Fetch and persist performance for all finished game weeks.
 
-    Reads CSV once from GCS, skips tracked game weeks, appends new rows,
-    writes once. Max 2 GCS calls per invocation.
+    Determines the most recent finished game week via the API,
+    reads CSV once from GCS, skips already-tracked weeks, appends
+    new rows, writes once.
 
     Args:
         fpl: Authenticated FPL instance.
-        game_week: Current/upcoming game week (tracks 1 through game_week - 1).
 
     Returns:
         Number of new game weeks appended.
     """
-    if game_week <= 0:
-        logger.info("Invalid game week: %d, skipping.", game_week)
+    latest_gw = await fpl.helpers.get_upcoming_gameweek() - 1
+    assert latest_gw >= 0, "Upcoming game week must be at least 1"
+
+    if latest_gw == 0:
+        logger.info("No finished game weeks yet, skipping.")
         return 0
 
     df = utils.read_performance_from_gcs(FPL_BUCKET, PERFORMANCE_BLOB)
     tracked = set(df["game_week"].values) if not df.empty else set()
+    assert isinstance(tracked, set), "Tracked game weeks must be a set"
 
     new_rows = []
-    for gw in range(1, game_week):
+    for gw in range(1, latest_gw + 1):
         if gw in tracked:
             logger.info("GW%d already tracked, skipping.", gw)
             continue
@@ -261,9 +265,9 @@ async def main():
         # Phase 6: Execute or log transfers
         transfer_log = await execute_or_log_transfers(fpl, recommendations)
 
-        # Phase 7: Track performance (non-fatal)
+        # Phase 7: Update performance (non-fatal)
         try:
-            await track_performance(fpl, game_week)
+            await update_performance(fpl)
         except Exception as e:
             logger.warning("Performance tracking failed (non-fatal): %s", e)
 

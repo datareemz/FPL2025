@@ -12,15 +12,15 @@ An autonomous FPL bot that manages transfers, selects lineups, and picks captain
 - **Z-Score Normalization** - Each metric (points, goals, assists, minutes, ROI, PPG) is standardized relative to the squad mean/std, making cross-metric comparison possible
 - **Simple Additive Weighting (SAW)** - Position-specific weights are applied to z-scores and summed into a single value, so a midfielder is judged differently from a goalkeeper
 
-## Model Performance (25/26 Season - 28 GWs)
+## Model Performance (25/26 Season - 29 GWs)
 
 ![My Points vs Average](assets/performance_chart.png)
 
 | Metric | Value |
 |---|---|
-| Total Points | 1530 |
-| Cumulative Points Above Average | +113 |
-| Gameweeks Beat or Matched Average | 20 / 28 (71%) |
+| Total Points | 1609 |
+| Cumulative Points Above Average | +152 |
+| Gameweeks Beat or Matched Average | 21 / 29 (72%) |
 | Best Gameweek | GW14: 82 pts (avg 58) |
 | Worst Gameweek | GW13: 26 pts (avg 35) |
 
